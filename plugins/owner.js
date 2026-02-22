@@ -1,7 +1,6 @@
-// plugins/owner.js
 export default {
-    command: ["owner"],
-    category: "main",
+    command: ['owner'],
+    category: 'main',
     owner: false,
     admin: false,
     reseller: false,
@@ -20,5 +19,7 @@ export default {
                 contacts: [{ vcard }]
             }
         }, { quoted: m })
+        
+        await m.reply(`*KNOX INFO*\n\nOwner: ${global.ownerName}\nContact: @${global.ownerNumber}\nTG: ${global.ownerUsername}`)
     }
 }

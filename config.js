@@ -10,13 +10,13 @@ global.pairingCode = "DARKTECH"
 global.prefixes = ['.', '/', '!', '#']
 
 global.img = {
-    menu: 'https://files.catbox.moe/menu.jpg',
-    cpanel: 'https://files.catbox.moe/cpanel.jpg',
-    owner: 'https://files.catbox.moe/owner.jpg',
-    download: 'https://files.catbox.moe/download.jpg',
-    group: 'https://files.catbox.moe/group.jpg',
-    git: 'https://files.catbox.moe/git.jpg',
-    osint: 'https://files.catbox.moe/osint.jpg'
+    menu: 'https://i.ibb.co/ycZ2BZ3X/knox5.png',
+    cpanel: 'https://i.ibb.co/YBqy56j4/cpanel.jpg',
+    owner: 'https://i.ibb.co/6Jb175mR/owner.jpg',
+    download: 'https://i.ibb.co/Y4sDm8kK/download.jpg',
+    group: 'https://i.ibb.co/MxVFSSky/group.jpg',
+    git: 'https://i.ibb.co/ksX7b70T/git.jpg',
+    osint: 'https://i.ibb.co/CpRYBBhW/osint.jpg'
 }
 
 global.music = {
