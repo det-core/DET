@@ -13,8 +13,8 @@ global.feature = {
 }
 
 global.requiredChannels = [
-    "@darkemptech",
-    "@darkempirechatroom"
+    "@darkempiretech",
+    "@knoxupdates"
 ]
 
 global.loc = "1"
