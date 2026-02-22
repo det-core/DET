@@ -1,6 +1,6 @@
-const fs = require("fs")
+import fs from "fs"
 
-global.det = {}
+const det = {}
 
 det.db = {
     owner: JSON.parse(fs.readFileSync("./database/owner.json")),
@@ -17,7 +17,7 @@ det.saveDB = () => {
 }
 
 det.getPrefix = (text = "") => {
-    return global.prefixes.find(p => text.startsWith(p))
+    return global.prefixes?.find(p => text.startsWith(p))
 }
 
 det.parseCommand = (text = "") => {
@@ -31,3 +31,5 @@ det.parseCommand = (text = "") => {
 det.isOwner = (id) => det.db.owner.includes(id)
 det.isAdmin = (id) => det.db.admin.includes(id)
 det.isReseller = (id) => det.db.reseller.includes(id)
+
+export default det

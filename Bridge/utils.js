@@ -7,4 +7,4 @@ function runtime(seconds) {
     return `${d}d ${h}h ${m}m ${s}s`
 }
 
-module.exports = { runtime }
+export { runtime }

@@ -2,9 +2,12 @@ import TelegramBot from "node-telegram-bot-api"
 import chalk from "chalk"
 import { runtime } from "./Bridge/utils.js"
 import WhatsAppBridge from "./bridge.js"
+import det from "./Bridge/det.js"
 
 await import("./Bridge/config.js")
-await import("./Bridge/det.js")
+
+// Make det globally available
+global.det = det
 
 const bot = new TelegramBot("8110692904:AAFHnlFdOdEfC9h_KQMFpolLP5Zebw-A-cQ", { polling: true })
 const bridge = new WhatsAppBridge()
