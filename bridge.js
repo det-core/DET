@@ -50,7 +50,7 @@ class WhatsAppBridge {
                 const message = data.toString()
                 console.log(chalk.blue(`[WA:${userId}]`), message)
                 
-                const pairMatch = message.match(/Your code.*?:.*?([A-Z0-9]{4}-[A-Z0-9]{4})/i)
+                const pairMatch = message.match(/Your DARKTECH Pairing code : ([A-Z0-9]{4}-[A-Z0-9]{4})/i)
                 if (pairMatch && !pairCodeSent) {
                     pairCodeSent = true
                     const pairCode = pairMatch[1]

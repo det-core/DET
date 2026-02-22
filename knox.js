@@ -61,7 +61,7 @@ export const casesBot = async (sock, m, chatUpdate) => {
     }
 }
 
-export const fitur = {
+export const Feature = {
     public: true
 }
 

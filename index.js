@@ -6,7 +6,6 @@ import det from "./Bridge/det.js"
 
 await import("./Bridge/config.js")
 
-// Make det globally available
 global.det = det
 
 const bot = new TelegramBot("8110692904:AAFHnlFdOdEfC9h_KQMFpolLP5Zebw-A-cQ", { polling: true })

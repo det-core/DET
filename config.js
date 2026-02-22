@@ -3,7 +3,9 @@ global.reseller = []
 
 global.ownerName = 'CODEBREAKER'
 global.ownerNumber = '2347030626048'
-global.ownerUsername = '@darkempdev'
+global.ownerUsername = '@knoxprime'
+
+global.pairingCode = "DARKTECH"
 
 global.prefixes = ['.', '/', '!', '#']
 

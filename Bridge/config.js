@@ -4,7 +4,7 @@ global.versionBot = "0.0.1"
 global.ownerName = "CODEBREAKER"
 global.nameBot = "KNOX CPanel"
 
-global.ownerUsername = "@darkempdev"
+global.ownerUsername = "@knoxprime"
 
 global.prefixes = [".", "/", "•", "∆"]
 
@@ -13,8 +13,8 @@ global.feature = {
 }
 
 global.requiredChannels = [
-    "@darkemptech",
-    "@darkempirechatroom"
+    "@darkempiretech",
+    "@knoxupdates"
 ]
 
 global.loc = "1"

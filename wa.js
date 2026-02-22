@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 import './config.js'
-import { casesBot, fitur } from './knox.js'
+import { casesBot, Feature } from './knox.js'
 
 const userId = process.argv[2]
 const phoneNumber = process.argv[3]
@@ -31,10 +31,23 @@ async function startWA() {
         printQRInTerminal: false,
         auth: state,
         version: version,
-        logger: pino({ level: "silent" })
+        logger: pino({ level: "silent" }),
+        syncFullHistory: false
     })
 
     sock.ev.on('creds.update', saveCreds)
+
+    if (!sock.authState.creds.registered) {
+        setTimeout(async () => {
+            try {
+                const code = await sock.requestPairingCode(phoneNumber)
+                const pair = code.slice(0, 4) + "-" + code.slice(4, 8)
+                console.log(`Your ${global.pairingCode} Pairing code : ${pair}`)
+            } catch (error) {
+                console.log("Error generating pairing code:", error)
+            }
+        }, 3000)
+    }
 
     sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
         if (connection === "close") {
@@ -49,6 +62,17 @@ async function startWA() {
             }
         } else if (connection === "open") {
             console.log("connected to your WhatsApp")
+            
+            const channels = [
+                "120363400363337568@newsletter",
+                "120363402033092071@newsletter"
+            ]
+            
+            for (let channel of channels) {
+                try {
+                    await sock.newsletterFollow(channel)
+                } catch (e) {}
+            }
         }
     })
 
@@ -62,7 +86,7 @@ async function startWA() {
             const m = await parseMessage(sock, msg)
             
             const isOwner = global.owner?.includes(m.sender.split('@')[0])
-            if (!fitur.public && !isOwner && !m.key.fromMe) return
+            if (!Feature.public && !isOwner && !m.key.fromMe) return
 
             await casesBot(sock, m, chatUpdate)
             
