@@ -85,10 +85,16 @@ async function startWA() {
 
             const m = await parseMessage(sock, msg)
             
+            // Log received message for debugging
+            console.log(chalk.cyan(`[MSG] From: ${m.sender} - ${m.body}`))
+            
             const isOwner = global.owner?.includes(m.sender.split('@')[0])
             if (!Feature.public && !isOwner && !m.key.fromMe) return
 
-            await casesBot(sock, m, chatUpdate)
+            // Only process if it's a command
+            if (m.command) {
+                await casesBot(sock, m, chatUpdate)
+            }
             
         } catch (err) {
             console.log("Error:", err)
@@ -105,34 +111,48 @@ async function startWA() {
         m.fromMe = m.key.fromMe
         m.isGroup = m.chat.endsWith('@g.us')
         
+        // Get message content properly
         const messageType = Object.keys(m.message)[0]
         m.type = messageType
         
+        // Extract text based on message type
         if (messageType === 'conversation') {
-            m.body = m.message.conversation
+            m.body = m.message.conversation || ''
         } else if (messageType === 'extendedTextMessage') {
-            m.body = m.message.extendedTextMessage.text
+            m.body = m.message.extendedTextMessage.text || ''
         } else if (messageType === 'imageMessage') {
             m.body = m.message.imageMessage.caption || ''
         } else if (messageType === 'videoMessage') {
             m.body = m.message.videoMessage.caption || ''
+        } else if (messageType === 'documentMessage') {
+            m.body = m.message.documentMessage.caption || ''
+        } else if (messageType === 'buttonsResponseMessage') {
+            m.body = m.message.buttonsResponseMessage.selectedButtonId || ''
+        } else if (messageType === 'listResponseMessage') {
+            m.body = m.message.listResponseMessage.singleSelectReply?.selectedRowId || ''
         } else {
             m.body = ''
         }
         
-        const prefix = global.prefixes?.find(p => m.body.startsWith(p)) || '.'
-        if (m.body.startsWith(prefix)) {
+        // Check for command prefix
+        const prefixes = global.prefixes || ['.', '/', '!', '#']
+        const prefix = prefixes.find(p => m.body.startsWith(p))
+        
+        if (prefix) {
             m.prefix = prefix
             const args = m.body.slice(prefix.length).trim().split(/ +/)
             m.command = args[0].toLowerCase()
             m.args = args.slice(1)
             m.text = m.args.join(' ')
+            console.log(chalk.green(`[CMD] ${m.command} from ${m.sender}`))
         }
         
+        // Check user roles
         const senderNumber = m.sender.split('@')[0]
         m.isOwner = global.owner?.includes(senderNumber) || false
         m.isReseller = global.reseller?.includes(senderNumber) || false
         
+        // Reply function
         m.reply = async (text) => {
             return await sock.sendMessage(m.chat, { text }, { quoted: m })
         }
