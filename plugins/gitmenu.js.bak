@@ -1,0 +1,20 @@
+import newsletter from '../Bridge/newsletter.js'
+
+export default {
+    command: ['gitmenu'],
+    category: 'git',
+    owner: false,
+    admin: false,
+    reseller: false,
+    group: false,
+    private: false,
+    execute: async (sock, m, text, args) => {
+        const menu = `┏⧉ *Git Menu*
+┣𖣠 .githubdl <user>/<repo>
+┣𖣠 .githubstalk <username>
+┣𖣠 .npm <package>
+┗━━━━━━━━━━━━━❖`
+
+        await newsletter.sendImage(sock, m.chat, global.img.git, menu, m)
+    }
+}

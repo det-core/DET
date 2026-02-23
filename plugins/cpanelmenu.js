@@ -1,3 +1,5 @@
+import newsletter from '../Bridge/newsletter.js'
+
 export default {
     command: ['cpanelmenu'],
     category: 'cpanel',
@@ -15,9 +17,16 @@ export default {
 ┣𖣠 .adminpanel
 ┗━━━━━━━━━━━━━❖`
 
-        await sock.sendMessage(m.chat, {
-            image: { url: global.img.cpanel },
-            caption: menu
-        }, { quoted: m })
+        if (global.img && global.img.cpanel) {
+            try {
+                const response = await axios.get(global.img.cpanel, { responseType: 'arraybuffer' })
+                const imageBuffer = Buffer.from(response.data)
+                await newsletter.sendImage(sock, m.chat, imageBuffer, menu, m)
+            } catch {
+                await newsletter.sendText(sock, m.chat, menu, m)
+            }
+        } else {
+            await newsletter.sendText(sock, m.chat, menu, m)
+        }
     }
 }

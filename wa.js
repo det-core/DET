@@ -3,7 +3,9 @@ import {
     useMultiFileAuthState,
     fetchLatestWaWebVersion,
     DisconnectReason,
-    Browsers
+    Browsers,
+    downloadContentFromMessage,
+    getContentType
 } from "@whiskeysockets/baileys"
 import pino from 'pino'
 import { Boom } from '@hapi/boom'
@@ -15,12 +17,13 @@ import chalk from 'chalk'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-import './config.js'
+import './Bridge/config.js'
+import det from './Bridge/det.js'
 import { casesBot, Feature } from './knox.js'
 
 const userId = process.argv[2]
 const phoneNumber = process.argv[3]
-const sessionPath = process.env.SESSION_PATH || path.join(__dirname, 'KnoxSession', `session_${userId}`)
+const sessionPath = process.env.SESSION_PATH || path.join(__dirname, 'KnoxSession', `session_${userId || 'default'}`)
 
 // Ensure session directory exists
 if (!fs.existsSync(sessionPath)) {
@@ -28,7 +31,7 @@ if (!fs.existsSync(sessionPath)) {
 }
 
 async function startWA() {
-    console.log(chalk.yellow(`[DEBUG] Starting WhatsApp bot for user: ${userId}`))
+    console.log(chalk.yellow(`[DEBUG] Starting WhatsApp bot for user: ${userId || 'default'}`))
     
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath)
     const { version } = await fetchLatestWaWebVersion()
@@ -40,17 +43,29 @@ async function startWA() {
         version: version,
         logger: pino({ level: "silent" }),
         syncFullHistory: false,
-        defaultQueryTimeoutMs: undefined
+        defaultQueryTimeoutMs: undefined,
+        generateHighQualityLinkPreview: true
     })
 
     sock.ev.on('creds.update', saveCreds)
 
-    if (!sock.authState.creds.registered) {
+    // Download media function
+    sock.downloadMediaMessage = async (message) => {
+        const type = Object.keys(message.message)[0]
+        const stream = await downloadContentFromMessage(message.message[type], type.replace('Message', ''))
+        let buffer = Buffer.from([])
+        for await (const chunk of stream) {
+            buffer = Buffer.concat([buffer, chunk])
+        }
+        return buffer
+    }
+
+    if (!sock.authState.creds.registered && phoneNumber) {
         setTimeout(async () => {
             try {
                 const code = await sock.requestPairingCode(phoneNumber)
                 const pair = code.slice(0, 4) + "-" + code.slice(4, 8)
-                console.log(`Your ${global.pairingCode} Pairing code : ${pair}`)
+                console.log(`Your ${global.pairingCode || 'KNOX'} Pairing code : ${pair}`)
             } catch (error) {
                 console.log("Error generating pairing code:", error)
             }
@@ -58,32 +73,26 @@ async function startWA() {
     }
 
     sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
-        console.log(chalk.yellow(`[DEBUG] Connection update: ${connection}`))
+        console.log(chalk.yellow(`[DEBUG] Connection update: ${connection || 'unknown'}`))
+        
+        if (qr) {
+            console.log(chalk.green('QR Code received - scan to login'))
+        }
         
         if (connection === "close") {
             const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
             console.log(chalk.red(`[DEBUG] Connection closed with reason: ${reason}`))
             
             if (reason === DisconnectReason.loggedOut) {
-                console.log("Logged out")
+                console.log("Logged out - removing session")
+                fs.rmSync(sessionPath, { recursive: true, force: true })
                 process.exit()
             } else {
                 console.log("Reconnecting in 5 seconds...")
                 setTimeout(() => startWA(), 5000)
             }
         } else if (connection === "open") {
-            console.log(chalk.green("✓ connected to your WhatsApp"))
-            
-            const channels = [
-                "120363400363337568@newsletter",
-                "120363402033092071@newsletter"
-            ]
-            
-            for (let channel of channels) {
-                try {
-                    await sock.newsletterFollow(channel)
-                } catch (e) {}
-            }
+            console.log(chalk.green.bold('✓ Successfully connected to WhatsApp'))
         }
     })
 
@@ -98,12 +107,16 @@ async function startWA() {
             
             if (!m) return
             
-            const isOwner = global.owner?.includes(m.sender.split('@')[0])
+            const senderId = m.sender.split('@')[0]
+            m.isOwner = det.isOwner(senderId)
+            m.isAdmin = det.isAdmin(senderId)
+            m.isReseller = det.isReseller(senderId)
             
-            if (!Feature.public && !isOwner && !m.key.fromMe) return
+            // Check bot mode
+            if (!Feature.public && !m.isOwner && !m.key.fromMe) return
 
             if (m.command) {
-                console.log(chalk.green(`[CMD] Executing: ${m.command}`))
+                console.log(chalk.green(`[CMD] ${m.command} from ${senderId} (${det.getUserStatus(senderId)})`))
                 try {
                     await casesBot(sock, m, chatUpdate)
                 } catch (cmdError) {
@@ -113,8 +126,7 @@ async function startWA() {
             }
             
         } catch (err) {
-            // Ignore encryption errors - they're normal during initial connection
-            if (!err.message?.includes('Bad MAC')) {
+            if (!err.message?.includes('Bad MAC') && !err.message?.includes('not a function')) {
                 console.log("Error:", err)
             }
         }
@@ -131,21 +143,39 @@ async function startWA() {
             m.fromMe = m.key.fromMe
             m.isGroup = m.chat.endsWith('@g.us')
             
-            const messageType = Object.keys(m.message)[0]
-            m.type = messageType
+            const type = getContentType(m.message)
+            m.type = type
             
-            if (messageType === 'conversation') {
+            // Get message body
+            if (type === 'conversation') {
                 m.body = m.message.conversation || ''
-            } else if (messageType === 'extendedTextMessage') {
+            } else if (type === 'extendedTextMessage') {
                 m.body = m.message.extendedTextMessage.text || ''
-            } else if (messageType === 'imageMessage') {
+            } else if (type === 'imageMessage') {
                 m.body = m.message.imageMessage.caption || ''
-            } else if (messageType === 'videoMessage') {
+            } else if (type === 'videoMessage') {
                 m.body = m.message.videoMessage.caption || ''
+            } else if (type === 'documentMessage') {
+                m.body = m.message.documentMessage.caption || ''
             } else {
                 m.body = ''
             }
             
+            // Check for quoted message
+            if (m.message.extendedTextMessage?.contextInfo?.quotedMessage) {
+                m.quoted = {
+                    message: m.message.extendedTextMessage.contextInfo.quotedMessage,
+                    key: {
+                        id: m.message.extendedTextMessage.contextInfo.stanzaId,
+                        participant: m.message.extendedTextMessage.contextInfo.participant,
+                        remoteJid: m.chat
+                    }
+                }
+                m.quoted.type = getContentType(m.quoted.message)
+                m.quoted.sender = m.quoted.key.participant || m.quoted.key.remoteJid
+            }
+            
+            // Check for prefix and command
             const prefixes = global.prefixes || ['.', '/', '!', '#']
             const prefix = prefixes.find(p => m.body.startsWith(p))
             
@@ -155,18 +185,42 @@ async function startWA() {
                 m.command = args[0].toLowerCase()
                 m.args = args.slice(1)
                 m.text = m.args.join(' ')
-                console.log(chalk.cyan(`[CMD] Detected: ${m.command} from ${m.sender}`))
             }
             
-            const senderNumber = m.sender.split('@')[0]
-            m.isOwner = global.owner?.includes(senderNumber) || false
-            m.isReseller = global.reseller?.includes(senderNumber) || false
-            
-            m.reply = async (text) => {
+            // Reply function
+            m.reply = async (text, options = {}) => {
                 try {
-                    return await sock.sendMessage(m.chat, { text }, { quoted: m })
+                    return await sock.sendMessage(m.chat, { text, ...options }, { quoted: m })
                 } catch (replyError) {
                     console.error('Reply error:', replyError)
+                    return null
+                }
+            }
+            
+            // Send image function
+            m.sendImage = async (buffer, caption = '') => {
+                try {
+                    return await sock.sendMessage(m.chat, {
+                        image: buffer,
+                        caption: caption
+                    }, { quoted: m })
+                } catch (error) {
+                    console.error('Send image error:', error)
+                    return null
+                }
+            }
+            
+            // React to message
+            m.react = async (emoji) => {
+                try {
+                    return await sock.sendMessage(m.chat, {
+                        react: {
+                            text: emoji,
+                            key: m.key
+                        }
+                    })
+                } catch (error) {
+                    console.error('React error:', error)
                     return null
                 }
             }
@@ -181,6 +235,11 @@ async function startWA() {
 
 // Handle process termination
 process.on('SIGINT', () => {
+    console.log(chalk.yellow('\n[SYSTEM] Shutting down...'))
+    process.exit()
+})
+
+process.on('SIGTERM', () => {
     console.log(chalk.yellow('\n[SYSTEM] Shutting down...'))
     process.exit()
 })

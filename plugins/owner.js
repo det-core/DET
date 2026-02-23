@@ -1,3 +1,5 @@
+import newsletter from '../Bridge/newsletter.js'
+
 export default {
     command: ['owner'],
     category: 'main',
@@ -20,6 +22,9 @@ export default {
             }
         }, { quoted: m })
         
-        await m.reply(`*KNOX INFO*\n\nOwner: ${global.ownerName}\nContact: @${global.ownerNumber}\nTG: ${global.ownerUsername}`)
+        await newsletter.sendText(sock, m.chat, 
+            `*OWNER INFO*\n\nName: ${global.ownerName}\nNumber: ${global.ownerNumber}\nTG: ${global.ownerUsername}`, 
+            m
+        )
     }
 }

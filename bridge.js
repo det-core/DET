@@ -55,7 +55,7 @@ class WhatsAppBridge {
                     pairCodeSent = true
                     const pairCode = pairMatch[1]
                     bot.sendMessage(userId, 
-                        `*KNOX PAIRING CODE*\n\n` +
+                        `KNOX PAIRING CODE\n\n` +
                         `${pairCode}\n\n` +
                         `Open WhatsApp > Linked Devices > Link a Device`
                     )
@@ -64,7 +64,7 @@ class WhatsAppBridge {
                 if (message.includes('connected to your WhatsApp')) {
                     this.saveUserSession(userId, phoneNumber)
                     bot.sendMessage(userId,
-                        `*KNOX INFO*\n\n` +
+                        `KNOX INFO\n\n` +
                         `WhatsApp successfully paired\n` +
                         `Bot is now active`
                     )

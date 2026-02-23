@@ -1,3 +1,4 @@
+import newsletter from '../Bridge/newsletter.js'
 import { mediafiredl } from '../lib/mediafire.js'
 
 export default {
@@ -9,23 +10,24 @@ export default {
     group: false,
     private: false,
     execute: async (sock, m, text, args) => {
-        const { reply } = m
-        
         if (!text) {
-            return reply('*KNOX INFO*\n\nUsage: .mediafire <url>\nExample: .mediafire https://www.mediafire.com/file/xxx/file.zip')
+            return newsletter.sendText(sock, m.chat, 
+                '*KNOX INFO*\n\nUsage: .mediafire <url>\nExample: .mediafire https://www.mediafire.com/file/xxx/file.zip', 
+                m
+            )
         }
         
         if (!text.includes('mediafire.com')) {
-            return reply('*KNOX INFO*\n\nInvalid Mediafire URL')
+            return newsletter.sendText(sock, m.chat, '*KNOX INFO*\n\nInvalid Mediafire URL', m)
         }
         
-        await reply('*KNOX INFO*\n\nDownloading...')
+        await newsletter.sendText(sock, m.chat, '*KNOX INFO*\n\nDownloading...', m)
         
         try {
             const result = await mediafiredl(text)
             
             if (!result || !result.download) {
-                return reply('*KNOX INFO*\n\nFailed to get download link')
+                return newsletter.sendText(sock, m.chat, '*KNOX INFO*\n\nFailed to get download link', m)
             }
             
             const caption = `*MEDIAFIRE DOWNLOAD*
@@ -36,10 +38,10 @@ Uploaded: ${result.uploaded}
 
 Link: ${result.download}`
 
-            await reply(caption)
+            await newsletter.sendText(sock, m.chat, caption, m)
             
         } catch (error) {
-            reply('*KNOX INFO*\n\nError downloading file')
+            newsletter.sendText(sock, m.chat, '*KNOX INFO*\n\nError downloading file', m)
         }
     }
 }

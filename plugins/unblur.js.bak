@@ -1,0 +1,76 @@
+const axios = require('axios')
+const fs = require('fs')
+const path = require('path')
+const crypto = require('crypto')
+
+const scale = ['2', '4', '8', '16']
+
+async function upimg(img) {
+  const filename = path.basename(img)
+
+  const upload = await axios.post('https://api.unblurimage.ai/api/common/upload/upload-image',
+    new URLSearchParams({ file_name: filename }).toString(),
+    {
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36',
+        origin: 'https://unblurimage.ai',
+        referer: 'https://unblurimage.ai/',
+        'Product-Serial': crypto.randomUUID()
+      }
+    }
+  )
+  
+  const { url, object_name } = upload.data.result
+
+  const buffer = fs.readFileSync(img)
+
+  const put = await axios.put(url, buffer, {
+    headers: {
+      'content-type': 'image/jpeg',
+      'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36'
+    }
+  })
+
+  return object_name
+}
+
+async function createjob(objectName, upscale) {
+  const r = await axios.post('https://api.unblurimage.ai/api/imgupscaler/v1/ai-image-upscaler-v2/create-job',
+    new URLSearchParams({
+      original_image_url: `https://cdn.unblurimage.ai/${objectName}`,
+      upscale_type: upscale
+    }).toString(),
+    {
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36',
+        origin: 'https://unblurimage.ai',
+        referer: 'https://unblurimage.ai/',
+        authorization: '',
+        'Product-Serial': crypto.randomUUID()
+      }
+    }
+  )
+
+  return r.data.result
+}
+
+async function unblur(img, upscale) {
+  if (!scale.includes(String(upscale))) {
+    throw new Error(`scale tidak valid, gunakan : ${scale.join(', ')}`)
+  }
+
+  const objectName = await upimg(img)
+  const job = await createjob(objectName, String(upscale))
+
+  return {
+    job_id: job.job_id,
+    input: job.input_url,
+    output: job.output_url
+  }
+}
+
+unblur('./thumb-5.jpg', '16')
+.then(console.log)
+.catch(console.error)

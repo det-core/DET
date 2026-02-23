@@ -1,36 +1,38 @@
-global.owner = ['2347030626048']
-global.reseller = []
-
-global.ownerName = 'CODEBREAKER'
-global.ownerNumber = '2347030626048'
-global.ownerUsername = '@knoxprime'
-
+// Bot Configuration
 global.pairingCode = "DARKTECH"
+global.versionBot = "1.0.0"
+global.ownerName = "CODEBREAKER"
+global.nameBot = "KNOX MD"
+global.ownerUsername = "@knoxprime"
+global.ownerNumber = "2347030626048"
 
-global.prefixes = ['.', '/', '!', '#']
+// Prefixes
+global.prefixes = [".", "/", "!", "#", "•", "∆"]
 
-global.img = {
-    menu: 'https://i.ibb.co/ycZ2BZ3X/knox5.png',
-    cpanel: 'https://i.ibb.co/YBqy56j4/cpanel.jpg',
-    owner: 'https://i.ibb.co/6Jb175mR/owner.jpg',
-    download: 'https://i.ibb.co/Y4sDm8kK/download.jpg',
-    group: 'https://i.ibb.co/MxVFSSky/group.jpg',
-    git: 'https://i.ibb.co/ksX7b70T/git.jpg',
-    osint: 'https://i.ibb.co/CpRYBBhW/osint.jpg'
+// Bot Mode
+global.feature = {
+    public: true // true = everyone can use, false = only owner
 }
 
-global.music = {
-    menu: 'https://files.catbox.moe/menu.mp3',
-    cpanel: 'https://files.catbox.moe/cpanel.mp3'
-}
+// Required Channels for Telegram
+global.requiredChannels = [
+    "@darkemptech",
+    "@darkempirechatroom"
+]
 
-global.loc = '1'
-global.egg = '15'
-global.nestid = '5'
-global.domain = 'https://yourpanel.com'
-global.apikey = 'ptla_yourkey'
-global.capikey = 'ptlc_yourkey'
+// Owner and Reseller IDs
+global.owner = ['2347030626048'] // Main owner
+global.reseller = [] // Reseller IDs
 
+// Pterodactyl Panel Configuration
+global.loc = "1"
+global.egg = "15"
+global.nestid = "5"
+global.domain = "https://yourpanel.com"
+global.apikey = "ptla_yourkey"
+global.capikey = "ptlc_yourkey"
+
+// Panel Prices
 global.panelPrices = {
     '1gb': { ram: 1024, disk: 1024, cpu: 30, price: 1500 },
     '2gb': { ram: 2048, disk: 2048, cpu: 40, price: 2500 },
@@ -42,4 +44,21 @@ global.panelPrices = {
     '8gb': { ram: 8192, disk: 8192, cpu: 100, price: 8500 },
     '9gb': { ram: 9216, disk: 9216, cpu: 110, price: 9500 },
     '10gb': { ram: 10240, disk: 10240, cpu: 120, price: 10500 }
+}
+
+// Images for menus
+global.img = {
+    menu: 'https://i.ibb.co/ycZ2BZ3X/knox5.png',
+    cpanel: 'https://i.ibb.co/YBqy56j4/cpanel.jpg',
+    owner: 'https://i.ibb.co/6Jb175mR/owner.jpg',
+    download: 'https://i.ibb.co/Y4sDm8kK/download.jpg',
+    group: 'https://i.ibb.co/MxVFSSky/group.jpg',
+    git: 'https://i.ibb.co/ksX7b70T/git.jpg',
+    osint: 'https://i.ibb.co/CpRYBBhW/osint.jpg'
+}
+
+// Music for menus
+global.music = {
+    menu: 'https://files.catbox.moe/menu.mp3',
+    cpanel: 'https://files.catbox.moe/cpanel.mp3'
 }

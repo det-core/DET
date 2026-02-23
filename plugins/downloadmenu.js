@@ -1,3 +1,6 @@
+import newsletter from '../Bridge/newsletter.js'
+import axios from 'axios'
+
 export default {
     command: ['downloadmenu'],
     category: 'download',
@@ -14,11 +17,26 @@ export default {
 ┣𖣠 .instagram <url>
 ┣𖣠 .facebook <url>
 ┣𖣠 .mediafire <url>
+┣𖣠 .sfile <url>
+┣𖣠 .githubdl <user>/<repo>
+┣𖣠 .terabox <url>
+┣𖣠 .capcut <url>
+┣𖣠 .likee <url>
+┣𖣠 .cocofun <url>
+┣𖣠 .pindl <url>
+┣𖣠 .xdownload <url>
 ┗━━━━━━━━━━━━━❖`
 
-        await sock.sendMessage(m.chat, {
-            image: { url: global.img.download },
-            caption: menu
-        }, { quoted: m })
+        if (global.img && global.img.download) {
+            try {
+                const response = await axios.get(global.img.download, { responseType: 'arraybuffer' })
+                const imageBuffer = Buffer.from(response.data)
+                await newsletter.sendImage(sock, m.chat, imageBuffer, menu, m)
+            } catch {
+                await newsletter.sendText(sock, m.chat, menu, m)
+            }
+        } else {
+            await newsletter.sendText(sock, m.chat, menu, m)
+        }
     }
 }

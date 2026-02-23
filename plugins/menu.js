@@ -1,3 +1,6 @@
+import newsletter from '../Bridge/newsletter.js'
+import { runtime } from '../Bridge/utils.js'
+
 export default {
     command: ['menu', 'help'],
     category: 'main',
@@ -8,30 +11,29 @@ export default {
     private: false,
     execute: async (sock, m, text, args) => {
         const uptime = process.uptime()
-        const days = Math.floor(uptime / 86400)
-        const hours = Math.floor(uptime / 3600) % 24
-        const minutes = Math.floor(uptime / 60) % 60
-        const seconds = Math.floor(uptime % 60)
-        const runtime = `${days}d ${hours}h ${minutes}m ${seconds}s`
-        
         const status = m.isOwner ? 'Owner' : m.isReseller ? 'Reseller' : 'User'
         
-        const menu = `*KNOX INFO*
+        const menu = `*KNOX*
 > Bot name : *KNOX MD*
 > Developer : *${global.ownerName}*
 > Version : *1.0.0*
-> Runtime : *${runtime}*
+> Runtime : *${runtime(uptime)}*
 > Status : *${status}*
 
 ┏⧉ *Available Menus*
 ┣𖣠 .allmenu
+┣𖣠 .convertmenu
+┣𖣠 .gamemenu
+┣𖣠 .searchmenu
 ┣𖣠 .cpanelmenu
 ┣𖣠 .downloadmenu
 ┣𖣠 .gitmenu
 ┣𖣠 .groupmenu
 ┣𖣠 .osintmenu 
-┗━━━━━━━━━❖`
+┗━━━━━━━━━❖
 
-        await m.reply(menu)
+Type .help [menu] for more details`
+
+        await newsletter.sendText(sock, m.chat, menu, m)
     }
 }

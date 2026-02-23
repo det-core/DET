@@ -1,3 +1,5 @@
+import newsletter from '../Bridge/newsletter.js'
+
 export default {
     command: ['cpanel', 'listpanel', 'delpanel', 'buypanel', 'adminpanel'],
     category: 'cpanel',
@@ -7,18 +9,18 @@ export default {
     group: false,
     private: false,
     execute: async (sock, m, text, args) => {
-        const { reply, command, isOwner, isReseller } = m
+        const { command, isOwner, isReseller } = m
         
         if (command === 'listpanel') {
             let panelList = '*KNOX PANEL PRICES*\n\n'
             
-            for (let [size, data] of Object.entries(global.panelPrices)) {
-                panelList += `${size} - CPU: ${data.cpu}% - ₦${data.price.toLocaleString()}\n`
+            for (let [size, data] of Object.entries(global.panelPrices || {})) {
+                panelList += `${size} - CPU: ${data.cpu}% - RAM: ${data.ram/1024}GB - ₦${data.price.toLocaleString()}\n`
             }
             
             panelList += '\nUse .buypanel to order'
             
-            return reply(panelList)
+            return newsletter.sendText(sock, m.chat, panelList, m)
         }
         
         if (command === 'buypanel') {
@@ -35,7 +37,10 @@ export default {
                 }
             }, { quoted: m })
             
-            return reply(`*KNOX INFO*\n\nContact ${global.ownerName} to order a panel\nTG: ${global.ownerUsername}`)
+            return newsletter.sendText(sock, m.chat, 
+                `*KNOX INFO*\n\nContact ${global.ownerName} to order a panel\nTG: ${global.ownerUsername}`, 
+                m
+            )
         }
         
         if (command === 'adminpanel') {
@@ -52,26 +57,32 @@ export default {
                 }
             }, { quoted: m })
             
-            return reply(`*KNOX INFO*\n\nContact ${global.ownerName} for admin panel access\nTG: ${global.ownerUsername}`)
+            return newsletter.sendText(sock, m.chat, 
+                `*KNOX INFO*\n\nContact ${global.ownerName} for admin panel access\nTG: ${global.ownerUsername}`, 
+                m
+            )
         }
         
         if (command === 'cpanel' && (isOwner || isReseller)) {
-            if (!text) return reply('*KNOX INFO*\n\nUsage: .cpanel name|size\nExample: .cpanel mypanel|2gb')
+            if (!text) return newsletter.sendText(sock, m.chat, '*KNOX INFO*\n\nUsage: .cpanel name|size\nExample: .cpanel mypanel|2gb', m)
             
             const [name, size] = text.split('|')
             
-            if (!global.panelPrices[size]) {
-                return reply('*KNOX INFO*\n\nInvalid size. Use: 1gb, 2gb, 3gb, 4gb, 5gb, 6gb, 7gb, 8gb, 9gb, 10gb')
+            if (!global.panelPrices || !global.panelPrices[size]) {
+                return newsletter.sendText(sock, m.chat, '*KNOX INFO*\n\nInvalid size. Use: 1gb, 2gb, 3gb, 4gb, 5gb, 6gb, 7gb, 8gb, 9gb, 10gb', m)
             }
             
             const panelData = global.panelPrices[size]
             
-            reply(`*KNOX INFO*\n\nCreating panel...\nName: ${name}\nSize: ${size}\nRAM: ${panelData.ram}MB\nCPU: ${panelData.cpu}%\nPrice: ₦${panelData.price.toLocaleString()}`)
+            newsletter.sendText(sock, m.chat, 
+                `*KNOX INFO*\n\nCreating panel...\nName: ${name}\nSize: ${size}\nRAM: ${panelData.ram}MB\nCPU: ${panelData.cpu}%\nPrice: ₦${panelData.price.toLocaleString()}`, 
+                m
+            )
         }
         
         if (command === 'delpanel' && isOwner) {
-            if (!text) return reply('*KNOX INFO*\n\nUsage: .delpanel panelid')
-            reply(`*KNOX INFO*\n\nPanel ${text} deleted successfully`)
+            if (!text) return newsletter.sendText(sock, m.chat, '*KNOX INFO*\n\nUsage: .delpanel panelid', m)
+            newsletter.sendText(sock, m.chat, `*KNOX INFO*\n\nPanel ${text} deleted successfully`, m)
         }
     }
 }

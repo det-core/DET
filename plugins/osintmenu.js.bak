@@ -1,0 +1,29 @@
+import newsletter from '../Bridge/newsletter.js'
+
+export default {
+    command: ['osintmenu'],
+    category: 'osint',
+    owner: false,
+    admin: false,
+    reseller: false,
+    group: false,
+    private: false,
+    execute: async (sock, m, text, args) => {
+        const menu = `┏⧉ *Osint Menu*
+┣𖣠 .igstalk <username>
+┣𖣠 .ttstalk <username>
+┣𖣠 .ghstalk <username>
+┣𖣠 .npmstalk <package>
+┣𖣠 .ipwho <ip>
+┣𖣠 .lookup <domain>
+┣𖣠 .wastalk <number>
+┣𖣠 .discordstalk <userid>
+┣𖣠 .robloxstalk <username>
+┣𖣠 .pintereststalk <username>
+┣𖣠 .ffstalk <id>
+┣𖣠 .ytstalk <channel>
+┗━━━━━━━━━━━━━❖`
+
+        await newsletter.sendImage(sock, m.chat, global.img.osint, menu, m)
+    }
+}

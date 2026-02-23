@@ -1,0 +1,17 @@
+import newsletter from '../Bridge/newsletter.js'
+
+export default {
+    command: ['ping'],
+    category: 'main',
+    owner: false,
+    admin: false,
+    reseller: false,
+    group: false,
+    private: false,
+    execute: async (sock, m, text, args) => {
+        const start = Date.now()
+        await newsletter.sendText(sock, m.chat, '*KNOX INFO*\n\nPinging...', m)
+        const end = Date.now()
+        await newsletter.sendText(sock, m.chat, `*KNOX INFO*\n\nPong!\nSpeed: ${end - start}ms`, m)
+    }
+}

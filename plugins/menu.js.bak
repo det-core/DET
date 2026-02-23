@@ -1,0 +1,40 @@
+export default {
+    command: ['menu', 'help'],
+    category: 'main',
+    owner: false,
+    admin: false,
+    reseller: false,
+    group: false,
+    private: false,
+    execute: async (sock, m, text, args) => {
+        const uptime = process.uptime()
+        const days = Math.floor(uptime / 86400)
+        const hours = Math.floor(uptime / 3600) % 24
+        const minutes = Math.floor(uptime / 60) % 60
+        const seconds = Math.floor(uptime % 60)
+        const runtime = `${days}d ${hours}h ${minutes}m ${seconds}s`
+        
+        const status = m.isOwner ? 'Owner' : m.isReseller ? 'Reseller' : 'User'
+        
+        const menu = `*KNOX INFO*
+> Bot name : *KNOX MD*
+> Developer : *${global.ownerName}*
+> Version : *1.0.0*
+> Runtime : *${runtime}*
+> Status : *${status}*
+
+┏⧉ *Available Menus*
+┣𖣠 .allmenu
+┣𖣠 .convertmenu
+┣𖣠 .gamemenu
+┣𖣠 .searchmenu
+┣𖣠 .cpanelmenu
+┣𖣠 .downloadmenu
+┣𖣠 .gitmenu
+┣𖣠 .groupmenu
+┣𖣠 .osintmenu 
+┗━━━━━━━━━❖`
+
+        await m.reply(menu)
+    }
+}
