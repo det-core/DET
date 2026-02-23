@@ -36,6 +36,8 @@ class WhatsAppBridge {
                 this.activeSessions.delete(userId)
             }
             
+            console.log(chalk.yellow(`[BRIDGE] Starting WhatsApp process for user ${userId}`))
+            
             const waProcess = spawn('node', ['wa.js', userId.toString(), phoneNumber], {
                 env: {
                     ...process.env,
@@ -45,29 +47,49 @@ class WhatsAppBridge {
             })
 
             let pairCodeSent = false
+            let sessionStarted = false
             
             waProcess.stdout.on('data', (data) => {
                 const message = data.toString()
                 console.log(chalk.blue(`[WA:${userId}]`), message)
                 
-                const pairMatch = message.match(/Your DARKTECH Pairing code : ([A-Z0-9]{4}-[A-Z0-9]{4})/i)
+                // Look for pairing code in various formats
+                const pairMatch = message.match(/Your .*? Pairing code : ([A-Z0-9]{4}-[A-Z0-9]{4})/i) ||
+                                 message.match(/Pairing code[:\s]*([A-Z0-9]{4}-[A-Z0-9]{4})/i) ||
+                                 message.match(/([A-Z0-9]{4}-[A-Z0-9]{4})/i)
+                
                 if (pairMatch && !pairCodeSent) {
                     pairCodeSent = true
                     const pairCode = pairMatch[1]
-                    bot.sendMessage(userId, 
-                        `KNOX PAIRING CODE\n\n` +
-                        `${pairCode}\n\n` +
-                        `Open WhatsApp > Linked Devices > Link a Device`
-                    )
+                    console.log(chalk.green(`[BRIDGE] Pairing code received for user ${userId}: ${pairCode}`))
+                    
+                    const pairMessage = `*KNOX PAIRING CODE*
+
+┏⧉ *Your Pairing Code*
+┣𖣠 \`${pairCode}\`
+┗━━━━━━━━━━━━━❖
+
+Open WhatsApp > Linked Devices > Link a Device
+Enter this code to pair your WhatsApp`
+                    
+                    bot.sendMessage(userId, pairMessage, { parse_mode: "Markdown" })
+                        .catch(err => console.error(chalk.red(`[BRIDGE] Failed to send message:`, err)))
                 }
                 
-                if (message.includes('connected to your WhatsApp')) {
+                // Check for successful connection
+                if (message.includes('connected to your WhatsApp') && !sessionStarted) {
+                    sessionStarted = true
                     this.saveUserSession(userId, phoneNumber)
-                    bot.sendMessage(userId,
-                        `KNOX INFO\n\n` +
-                        `WhatsApp successfully paired\n` +
-                        `Bot is now active`
-                    )
+                    
+                    const successMessage = `*KNOX INFO*
+
+┏⧉ *Session Active*
+┣𖣠 WhatsApp successfully paired
+┣𖣠 Bot is now active in your WhatsApp
+┗━━━━━━━━━━━━━❖`
+                    
+                    bot.sendMessage(userId, successMessage, { parse_mode: "Markdown" })
+                        .catch(err => console.error(chalk.red(`[BRIDGE] Failed to send success message:`, err)))
                 }
             })
 
@@ -109,10 +131,14 @@ class WhatsAppBridge {
             
             this.removeUserSession(userId)
             
-            bot.sendMessage(userId,
-                `*KNOX INFO*\n\n` +
-                `Session deleted successfully`
-            )
+            const stopMessage = `*KNOX INFO*
+
+┏⧉ *Session Deleted*
+┣𖣠 Session removed successfully
+┗━━━━━━━━━━━━━❖`
+            
+            bot.sendMessage(userId, stopMessage, { parse_mode: "Markdown" })
+                .catch(err => console.error('Failed to send stop message:', err))
             
             return { success: true }
             
@@ -137,6 +163,7 @@ class WhatsAppBridge {
         }
         
         fs.writeFileSync(sessionsFile, JSON.stringify(sessions, null, 2))
+        console.log(chalk.green(`[BRIDGE] Session saved for user ${userId}`))
     }
 
     removeUserSession(userId) {
@@ -146,6 +173,7 @@ class WhatsAppBridge {
             let sessions = JSON.parse(fs.readFileSync(sessionsFile))
             delete sessions[userId]
             fs.writeFileSync(sessionsFile, JSON.stringify(sessions, null, 2))
+            console.log(chalk.yellow(`[BRIDGE] Session removed for user ${userId}`))
         }
     }
 
