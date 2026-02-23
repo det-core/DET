@@ -25,7 +25,6 @@ const userId = process.argv[2]
 const phoneNumber = process.argv[3]
 const sessionPath = process.env.SESSION_PATH || path.join(__dirname, 'KnoxSession', `session_${userId || 'default'}`)
 
-// Ensure session directory exists
 if (!fs.existsSync(sessionPath)) {
     fs.mkdirSync(sessionPath, { recursive: true })
 }
@@ -50,7 +49,6 @@ async function startWA() {
 
     sock.ev.on('creds.update', saveCreds)
 
-    // Download media function
     sock.downloadMediaMessage = async (message) => {
         const type = Object.keys(message.message)[0]
         const stream = await downloadContentFromMessage(message.message[type], type.replace('Message', ''))
@@ -126,7 +124,6 @@ async function startWA() {
             m.isAdmin = det.isAdmin(senderId)
             m.isReseller = det.isReseller(senderId)
             
-            // Check bot mode
             if (!Feature.public && !m.isOwner && !m.key.fromMe) return
 
             if (m.command) {
@@ -140,7 +137,6 @@ async function startWA() {
             }
             
         } catch (err) {
-            // Ignore Bad MAC errors - they're normal
             if (err.message?.includes('Bad MAC')) {
                 return
             }
@@ -150,10 +146,7 @@ async function startWA() {
         }
     })
 
-    // Handle presence updates (to avoid errors)
     sock.ev.on("presence.update", () => {})
-
-    // Handle messages.update (to avoid errors)
     sock.ev.on("messages.update", () => {})
 
     async function parseMessage(sock, msg) {
@@ -170,7 +163,6 @@ async function startWA() {
             const type = getContentType(m.message)
             m.type = type
             
-            // Get message body
             if (type === 'conversation') {
                 m.body = m.message.conversation || ''
             } else if (type === 'extendedTextMessage') {
@@ -185,7 +177,6 @@ async function startWA() {
                 m.body = ''
             }
             
-            // Check for quoted message
             if (m.message.extendedTextMessage?.contextInfo?.quotedMessage) {
                 m.quoted = {
                     message: m.message.extendedTextMessage.contextInfo.quotedMessage,
@@ -198,7 +189,6 @@ async function startWA() {
                 m.quoted.type = getContentType(m.quoted.message)
                 m.quoted.sender = m.quoted.key.participant || m.quoted.key.remoteJid
                 
-                // Add download function to quoted message
                 m.quoted.download = async () => {
                     const quotedType = Object.keys(m.quoted.message)[0]
                     const stream = await downloadContentFromMessage(m.quoted.message[quotedType], quotedType.replace('Message', ''))
@@ -210,7 +200,6 @@ async function startWA() {
                 }
             }
             
-            // Check for prefix and command
             const prefixes = global.prefixes || ['.', '/', '!', '#', '•', '∆']
             const prefix = prefixes.find(p => m.body.startsWith(p))
             
@@ -222,7 +211,6 @@ async function startWA() {
                 m.text = m.args.join(' ')
             }
             
-            // Download function for media
             m.download = async () => {
                 const mediaType = Object.keys(m.message)[0]
                 const stream = await downloadContentFromMessage(m.message[mediaType], mediaType.replace('Message', ''))
@@ -233,7 +221,6 @@ async function startWA() {
                 return buffer
             }
             
-            // Reply function
             m.reply = async (text, options = {}) => {
                 try {
                     return await sock.sendMessage(m.chat, { text, ...options }, { quoted: m })
@@ -243,7 +230,6 @@ async function startWA() {
                 }
             }
             
-            // Send image function
             m.sendImage = async (buffer, caption = '') => {
                 try {
                     return await sock.sendMessage(m.chat, {
@@ -256,7 +242,6 @@ async function startWA() {
                 }
             }
             
-            // Send video function
             m.sendVideo = async (buffer, caption = '') => {
                 try {
                     return await sock.sendMessage(m.chat, {
@@ -270,7 +255,6 @@ async function startWA() {
                 }
             }
             
-            // Send audio function
             m.sendAudio = async (buffer, ptt = false) => {
                 try {
                     return await sock.sendMessage(m.chat, {
@@ -284,7 +268,6 @@ async function startWA() {
                 }
             }
             
-            // Send document function
             m.sendDocument = async (buffer, fileName, caption = '') => {
                 try {
                     return await sock.sendMessage(m.chat, {
@@ -299,7 +282,6 @@ async function startWA() {
                 }
             }
             
-            // React to message
             m.react = async (emoji) => {
                 try {
                     return await sock.sendMessage(m.chat, {
@@ -322,7 +304,6 @@ async function startWA() {
     }
 }
 
-// Handle process termination
 process.on('SIGINT', () => {
     console.log(chalk.yellow('\n[SYSTEM] Shutting down...'))
     process.exit()

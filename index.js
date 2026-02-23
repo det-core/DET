@@ -63,7 +63,7 @@ You must join required channels before using KNOX`,
             parse_mode: "Markdown",
             reply_markup: {
                 inline_keyboard: global.requiredChannels.map(ch => [
-                    { text: ch, url: `https://t.me/${ch.replace("@", "")}` }
+                    { text: ch.replace("@", ""), url: `https://t.me/${ch.replace("@", "")}` }
                 ]).concat([
                     [{ text: "VERIFY", callback_data: "verify_join" }]
                 ])
@@ -108,27 +108,12 @@ global.det.delsess = async (msg, bot) => {
     const userId = msg.from.id
     const chatId = msg.chat.id
     
-    const deletingMsg = await bot.sendMessage(chatId, 
+    await bot.sendMessage(chatId, 
         `*KNOX INFO*\n\nDeleting session...`,
         { parse_mode: "Markdown" }
     )
     
-    const result = await bridge.stopSession(userId, bot)
-    
-    if (result.success) {
-        await bot.editMessageText(
-            `*KNOX INFO*
-
-┏⧉ *Session Deleted*
-┣𖣠 WhatsApp session removed successfully
-┗━━━━━━━━━━━━━❖`,
-            {
-                chat_id: chatId,
-                message_id: deletingMsg.message_id,
-                parse_mode: "Markdown"
-            }
-        )
-    }
+    await bridge.stopSession(userId, bot)
 }
 
 global.det.help = async (msg) => {
@@ -155,36 +140,23 @@ bot.on("message", async (msg) => {
     const userId = msg.from.id
     const text = msg.text
     
-    // Check if user is in pairing mode
     if (global.pendingPair && global.pendingPair[userId]) {
         const cleaned = text.replace(/\D/g, '')
         if (/^\d{10,15}$/.test(cleaned)) {
             delete global.pendingPair[userId]
             const phone = cleaned
             
-            const waitingMsg = await bot.sendMessage(chatId, 
-                `*KNOX PAIRING*
-
-┏⧉ *Starting Session*
-┣𖣠 Please wait for the pairing code...
-┗━━━━━━━━━━━━━❖`,
+            bot.sendMessage(chatId, 
+                `*KNOX PAIRING*\n\nStarting session...`,
                 { parse_mode: "Markdown" }
             )
             
             const result = await bridge.startSession(userId, phone, bot)
             
             if (!result.success) {
-                await bot.editMessageText(
-                    `*KNOX INFO*
-
-┏⧉ *Error*
-┣𖣠 ${result.message}
-┗━━━━━━━━━━━━━❖`,
-                    {
-                        chat_id: chatId,
-                        message_id: waitingMsg.message_id,
-                        parse_mode: "Markdown"
-                    }
+                bot.sendMessage(chatId, 
+                    `*KNOX INFO*\n\n${result.message}`,
+                    { parse_mode: "Markdown" }
                 )
             }
         } else {
