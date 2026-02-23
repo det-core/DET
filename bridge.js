@@ -47,13 +47,12 @@ class WhatsAppBridge {
             })
 
             let pairCodeSent = false
-            let sessionStarted = false
             
             waProcess.stdout.on('data', (data) => {
                 const message = data.toString()
                 console.log(chalk.blue(`[WA:${userId}]`), message)
                 
-                // Look for pairing code in various formats
+                // Look for pairing code
                 const pairMatch = message.match(/Your .*? Pairing code : ([A-Z0-9]{4}-[A-Z0-9]{4})/i) ||
                                  message.match(/Pairing code[:\s]*([A-Z0-9]{4}-[A-Z0-9]{4})/i) ||
                                  message.match(/([A-Z0-9]{4}-[A-Z0-9]{4})/i)
@@ -61,7 +60,6 @@ class WhatsAppBridge {
                 if (pairMatch && !pairCodeSent) {
                     pairCodeSent = true
                     const pairCode = pairMatch[1]
-                    console.log(chalk.green(`[BRIDGE] Pairing code received for user ${userId}: ${pairCode}`))
                     
                     const pairMessage = `*KNOX PAIRING CODE*
 
@@ -77,8 +75,7 @@ Enter this code to pair your WhatsApp`
                 }
                 
                 // Check for successful connection
-                if (message.includes('connected to your WhatsApp') && !sessionStarted) {
-                    sessionStarted = true
+                if (message.includes('connected to your WhatsApp')) {
                     this.saveUserSession(userId, phoneNumber)
                     
                     const successMessage = `*KNOX INFO*

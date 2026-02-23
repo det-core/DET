@@ -31,7 +31,7 @@ if (!fs.existsSync(sessionPath)) {
 }
 
 async function startWA() {
-    console.log(chalk.yellow(`[DEBUG] Starting WhatsApp bot for user: ${userId || 'default'}`))
+    console.log(chalk.yellow(`[WA] Starting WhatsApp bot for user: ${userId || 'default'}`))
     
     const { state, saveCreds } = await useMultiFileAuthState(sessionPath)
     const { version } = await fetchLatestWaWebVersion()
@@ -63,17 +63,32 @@ async function startWA() {
     if (!sock.authState.creds.registered && phoneNumber) {
         setTimeout(async () => {
             try {
+                console.log(chalk.yellow(`\n[WA] Generating pairing code for ${phoneNumber}...`))
                 const code = await sock.requestPairingCode(phoneNumber)
                 const pair = code.slice(0, 4) + "-" + code.slice(4, 8)
+                
+                // Log to console with design
+                console.log(chalk.green.bold(`
+╔══════════════════════════════════╗
+║     KNOX PAIRING CODE            ║
+╠══════════════════════════════════╣
+║                                  ║
+║        ${pair}            ║
+║                                  ║
+╚══════════════════════════════════╝
+`))
+                
+                // This will be caught by the bridge and sent to Telegram
                 console.log(`Your ${global.pairingCode || 'KNOX'} Pairing code : ${pair}`)
+                
             } catch (error) {
-                console.log("Error generating pairing code:", error)
+                console.log(chalk.red("Error generating pairing code:"), error)
             }
         }, 3000)
     }
 
     sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
-        console.log(chalk.yellow(`[DEBUG] Connection update: ${connection || 'unknown'}`))
+        console.log(chalk.yellow(`[WA] Connection update: ${connection || 'unknown'}`))
         
         if (qr) {
             console.log(chalk.green('QR Code received - scan to login'))
@@ -81,14 +96,14 @@ async function startWA() {
         
         if (connection === "close") {
             const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
-            console.log(chalk.red(`[DEBUG] Connection closed with reason: ${reason}`))
+            console.log(chalk.red(`[WA] Connection closed with reason: ${reason}`))
             
             if (reason === DisconnectReason.loggedOut) {
-                console.log("Logged out - removing session")
+                console.log(chalk.red("[WA] Logged out - removing session"))
                 fs.rmSync(sessionPath, { recursive: true, force: true })
                 process.exit()
             } else {
-                console.log("Reconnecting in 5 seconds...")
+                console.log(chalk.yellow("[WA] Reconnecting in 5 seconds..."))
                 setTimeout(() => startWA(), 5000)
             }
         } else if (connection === "open") {
@@ -126,7 +141,11 @@ async function startWA() {
             }
             
         } catch (err) {
-            if (!err.message?.includes('Bad MAC') && !err.message?.includes('not a function')) {
+            // Ignore Bad MAC errors - they're normal
+            if (err.message?.includes('Bad MAC')) {
+                return
+            }
+            if (!err.message?.includes('not a function')) {
                 console.log("Error:", err)
             }
         }
@@ -173,10 +192,21 @@ async function startWA() {
                 }
                 m.quoted.type = getContentType(m.quoted.message)
                 m.quoted.sender = m.quoted.key.participant || m.quoted.key.remoteJid
+                
+                // Add download function to quoted message
+                m.quoted.download = async () => {
+                    const quotedType = Object.keys(m.quoted.message)[0]
+                    const stream = await downloadContentFromMessage(m.quoted.message[quotedType], quotedType.replace('Message', ''))
+                    let buffer = Buffer.from([])
+                    for await (const chunk of stream) {
+                        buffer = Buffer.concat([buffer, chunk])
+                    }
+                    return buffer
+                }
             }
             
             // Check for prefix and command
-            const prefixes = global.prefixes || ['.', '/', '!', '#']
+            const prefixes = global.prefixes || ['.', '/', '!', '#', '•', '∆']
             const prefix = prefixes.find(p => m.body.startsWith(p))
             
             if (prefix) {
@@ -185,6 +215,17 @@ async function startWA() {
                 m.command = args[0].toLowerCase()
                 m.args = args.slice(1)
                 m.text = m.args.join(' ')
+            }
+            
+            // Download function for media
+            m.download = async () => {
+                const mediaType = Object.keys(m.message)[0]
+                const stream = await downloadContentFromMessage(m.message[mediaType], mediaType.replace('Message', ''))
+                let buffer = Buffer.from([])
+                for await (const chunk of stream) {
+                    buffer = Buffer.concat([buffer, chunk])
+                }
+                return buffer
             }
             
             // Reply function
