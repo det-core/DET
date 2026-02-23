@@ -17,7 +17,7 @@
     "awesome-phonenumber": "^6.9.0",
     "axios": "^1.7.9",
     "axios-cookiejar-support": "^5.0.2",
-    "bycf": "^1.1.5",
+    "bycf": "^1.1.4",
     "chalk": "^5.4.1",
     "cheerio": "^1.0.0",
     "crypto-js": "^4.2.0",
