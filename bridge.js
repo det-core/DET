@@ -53,16 +53,74 @@ class WhatsAppBridge {
                 const message = data.toString()
                 console.log(chalk.blue(`[WA:${userId}]`), message)
                 
-                // Look for pairing code in multiple formats
-                const pairMatch = message.match(/([A-Z0-9]{4})-([A-Z0-9]{4})/i) ||
-                                 message.match(/code[:\s]*([A-Z0-9]{4}-[A-Z0-9]{4})/i) ||
-                                 message.match(/Your .*? Pairing code : ([A-Z0-9]{4}-[A-Z0-9]{4})/i)
+                // ===========================================
+                // CAPTURE ANY PAIRING CODE - MULTIPLE PATTERNS
+                // ===========================================
                 
-                if (pairMatch && !pairCodeSent) {
+                let pairCode = null
+                
+                // Pattern 1: Your DARKTECH Pairing code : XXXX-XXXX
+                const specificMatch = message.match(/Your .*? Pairing code : ([A-Z0-9]{4}-[A-Z0-9]{4})/i)
+                if (specificMatch && !pairCodeSent) {
+                    pairCode = specificMatch[1].toUpperCase()
+                    console.log(chalk.green(`[BRIDGE] Found pairing code (specific): ${pairCode}`))
+                }
+                
+                // Pattern 2: XXXX-XXXX (with hyphen)
+                if (!pairCode && !pairCodeSent) {
+                    const hyphenMatch = message.match(/\b([A-Z0-9]{4})-([A-Z0-9]{4})\b/i)
+                    if (hyphenMatch) {
+                        pairCode = `${hyphenMatch[1]}-${hyphenMatch[2]}`.toUpperCase()
+                        console.log(chalk.green(`[BRIDGE] Found pairing code (hyphen): ${pairCode}`))
+                    }
+                }
+                
+                // Pattern 3: 8 character code (XXXXXX)
+                if (!pairCode && !pairCodeSent) {
+                    const eightCharMatch = message.match(/\b([A-Z0-9]{8})\b/i)
+                    if (eightCharMatch) {
+                        const code = eightCharMatch[1].toUpperCase()
+                        // Format as XXXX-XXXX for better readability
+                        pairCode = `${code.slice(0,4)}-${code.slice(4)}`
+                        console.log(chalk.green(`[BRIDGE] Found pairing code (8char): ${pairCode}`))
+                    }
+                }
+                
+                // Pattern 4: Any code after "code:" or "Code:"
+                if (!pairCode && !pairCodeSent) {
+                    const codeLabelMatch = message.match(/code:?\s*([A-Z0-9]{4,8}[-\s]?[A-Z0-9]{4,8})/i)
+                    if (codeLabelMatch) {
+                        let code = codeLabelMatch[1].toUpperCase().replace(/\s+/g, '')
+                        if (code.length === 8 && !code.includes('-')) {
+                            pairCode = `${code.slice(0,4)}-${code.slice(4)}`
+                        } else {
+                            pairCode = code
+                        }
+                        console.log(chalk.green(`[BRIDGE] Found pairing code (label): ${pairCode}`))
+                    }
+                }
+                
+                // Pattern 5: ANY alphanumeric string that looks like a code (4-10 chars)
+                if (!pairCode && !pairCodeSent) {
+                    const anyCodeMatch = message.match(/\b([A-Z0-9]{4,10})\b/i)
+                    if (anyCodeMatch) {
+                        const code = anyCodeMatch[1].toUpperCase()
+                        if (code.length === 8) {
+                            pairCode = `${code.slice(0,4)}-${code.slice(4)}`
+                        } else if (code.length === 7 || code.length === 9 || code.length === 10) {
+                            // Keep as is
+                            pairCode = code
+                        }
+                        console.log(chalk.green(`[BRIDGE] Found pairing code (any): ${pairCode || code}`))
+                        if (!pairCode) pairCode = code
+                    }
+                }
+                
+                // If we found a code, send it to Telegram
+                if (pairCode && !pairCodeSent) {
                     pairCodeSent = true
-                    const pairCode = pairMatch[1]?.includes('-') ? pairMatch[1] : `${pairMatch[1]}-${pairMatch[2]}`.toUpperCase()
                     
-                    console.log(chalk.green(`[BRIDGE] Found pairing code: ${pairCode}`))
+                    console.log(chalk.green.bold(`[BRIDGE] Sending code to user ${userId}: ${pairCode}`))
                     
                     const pairMessage = `*KNOX PAIRING CODE*
 
@@ -74,6 +132,7 @@ Open WhatsApp > Linked Devices > Link a Device
 Enter this code to pair your WhatsApp`
                     
                     bot.sendMessage(userId, pairMessage, { parse_mode: "Markdown" })
+                        .then(() => console.log(chalk.green(`[BRIDGE] Code sent successfully!`)))
                         .catch(err => console.error(chalk.red(`[BRIDGE] Failed to send message:`, err)))
                 }
                 
