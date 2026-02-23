@@ -59,6 +59,6 @@ global.img = {
 
 // Music for menus
 global.music = {
-    menu: 'https://files.catbox.moe/menu.mp3',
-    cpanel: 'https://files.catbox.moe/cpanel.mp3'
+    menu: 'https://files.catbox.moe/0r8asd.mp3',
+    cpanel: 'https://files.catbox.moe/3we7c6.mp3'
 }

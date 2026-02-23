@@ -13,7 +13,7 @@ export default {
         const uptime = process.uptime()
         const status = m.isOwner ? 'Owner' : m.isReseller ? 'Reseller' : 'User'
         
-        const menu = `*KNOX INFO*
+        const menu = `*KNOX*
 > Bot name : *KNOX MD*
 > Developer : *${global.ownerName}*
 > Version : *1.0.0*
