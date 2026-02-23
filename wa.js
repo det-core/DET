@@ -41,10 +41,11 @@ async function startWA() {
         printQRInTerminal: false,
         auth: state,
         version: version,
-        logger: pino({ level: "silent" }),
+        logger: pino({ level: "fatal" }),
         syncFullHistory: false,
         defaultQueryTimeoutMs: undefined,
-        generateHighQualityLinkPreview: true
+        generateHighQualityLinkPreview: true,
+        shouldSyncHistoryMessage: () => false
     })
 
     sock.ev.on('creds.update', saveCreds)
@@ -67,7 +68,6 @@ async function startWA() {
                 const code = await sock.requestPairingCode(phoneNumber)
                 const pair = code.slice(0, 4) + "-" + code.slice(4, 8)
                 
-                // Log to console with design
                 console.log(chalk.green.bold(`
 ╔══════════════════════════════════╗
 ║     KNOX PAIRING CODE            ║
@@ -78,7 +78,6 @@ async function startWA() {
 ╚══════════════════════════════════╝
 `))
                 
-                // This will be caught by the bridge and sent to Telegram
                 console.log(`Your ${global.pairingCode || 'KNOX'} Pairing code : ${pair}`)
                 
             } catch (error) {
@@ -150,6 +149,12 @@ async function startWA() {
             }
         }
     })
+
+    // Handle presence updates (to avoid errors)
+    sock.ev.on("presence.update", () => {})
+
+    // Handle messages.update (to avoid errors)
+    sock.ev.on("messages.update", () => {})
 
     async function parseMessage(sock, msg) {
         try {
@@ -247,6 +252,49 @@ async function startWA() {
                     }, { quoted: m })
                 } catch (error) {
                     console.error('Send image error:', error)
+                    return null
+                }
+            }
+            
+            // Send video function
+            m.sendVideo = async (buffer, caption = '') => {
+                try {
+                    return await sock.sendMessage(m.chat, {
+                        video: buffer,
+                        caption: caption,
+                        mimetype: 'video/mp4'
+                    }, { quoted: m })
+                } catch (error) {
+                    console.error('Send video error:', error)
+                    return null
+                }
+            }
+            
+            // Send audio function
+            m.sendAudio = async (buffer, ptt = false) => {
+                try {
+                    return await sock.sendMessage(m.chat, {
+                        audio: buffer,
+                        mimetype: ptt ? 'audio/ogg; codecs=opus' : 'audio/mpeg',
+                        ptt: ptt
+                    }, { quoted: m })
+                } catch (error) {
+                    console.error('Send audio error:', error)
+                    return null
+                }
+            }
+            
+            // Send document function
+            m.sendDocument = async (buffer, fileName, caption = '') => {
+                try {
+                    return await sock.sendMessage(m.chat, {
+                        document: buffer,
+                        fileName: fileName,
+                        caption: caption,
+                        mimetype: 'application/octet-stream'
+                    }, { quoted: m })
+                } catch (error) {
+                    console.error('Send document error:', error)
                     return null
                 }
             }
